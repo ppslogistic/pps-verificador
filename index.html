@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1c2b4a">
+<meta name="description" content="Verificador de antecedentes de uso interno (datos simulados).">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Verificador">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+</style>
+<title>Verificador Interno</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: app de una columna (hasta 720px en tablet), cabecera fija, barra de pestañas inferior de cuatro secciones, informe como ficha con fuentes desplegables. */
+:root {
+  --bg: #f1f5f9;
+  --surface: #ffffff;
+  --ink: #14212e;
+  --muted: #566879;
+  --line: #d6dee7;
+  --accent: #1f5f93;
+  --accent-ink: #ffffff;
+  --accent-soft: #e3eef8;
+  --ok: #12703f;     --ok-bg: #e2f4ea;
+  --warn: #8f5600;   --warn-bg: #fdf0d6;
+  --crit: #a8231b;   --crit-bg: #fbe5e3;
+  --neutral: #4e5c6b; --neutral-bg: #e8edf2;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1620; --surface: #15202c; --ink: #e5ecf3; --muted: #9bacbc; --line: #26364a;
+    --accent: #6eb4ee; --accent-ink: #07213a; --accent-soft: #17304a;
+    --ok: #55cc8f; --ok-bg: #12301f; --warn: #f0b24f; --warn-bg: #36280d;
+    --crit: #ff8f85; --crit-bg: #3b1816; --neutral: #a4b0be; --neutral-bg: #202d3b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1620; --surface: #15202c; --ink: #e5ecf3; --muted: #9bacbc; --line: #26364a;
+  --accent: #6eb4ee; --accent-ink: #07213a; --accent-soft: #17304a;
+  --ok: #55cc8f; --ok-bg: #12301f; --warn: #f0b24f; --warn-bg: #36280d;
+  --crit: #ff8f85; --crit-bg: #3b1816; --neutral: #a4b0be; --neutral-bg: #202d3b;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 400 16px/1.5 var(--font-body);
+  padding-inline: max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 96px;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+  z-index: 10; background: var(--surface);
+}
+.wrap { max-width: 720px; margin-inline: auto; }
+
+header.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 9;
+  background: var(--surface); border-bottom: 1px solid var(--line);
+  margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))) calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+  padding: 12px max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px));
+}
+header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { font: 700 20px/1.1 var(--font-display); letter-spacing: -0.01em; }
+.brand small { display: block; font: 500 12px/1.3 var(--font-body); color: var(--muted); letter-spacing: 0; margin-top: 2px; }
+.modo {
+  font: 600 11px/1 var(--font-body); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--warn); background: var(--warn-bg); padding: 7px 10px; border-radius: 999px;
+}
+
+main { padding-top: 20px; display: grid; gap: 20px; }
+h2 { font: 700 24px/1.15 var(--font-display); margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h3 { font: 600 13px/1.2 var(--font-body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 8px; }
+p { margin: 0; }
+.lead { color: var(--muted); max-width: 62ch; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+.stack { display: grid; gap: 14px; }
+
+/* Formularios */
+.field { display: grid; gap: 6px; min-width: 0; }
+.field > label, .lbl { font-weight: 600; font-size: 14px; }
+.hint { font-size: 13px; color: var(--muted); }
+input[type=text], select {
+  width: 100%; min-height: 48px; padding: 10px 12px; font: 400 16px/1.3 var(--font-body);
+  color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+}
+input.mono { font-family: var(--font-mono); font-size: 20px; letter-spacing: .14em; }
+input:focus-visible, select:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+.check { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; }
+.check input { width: 22px; height: 22px; margin: 1px 0 0; flex: none; accent-color: var(--accent); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font: 500 13px/1.2 var(--font-body); min-height: 40px; padding: 8px 12px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent); border: 1px solid transparent; cursor: pointer;
+}
+
+button.primary {
+  min-height: 52px; width: 100%; border: 0; border-radius: var(--radius); cursor: pointer;
+  background: var(--accent); color: var(--accent-ink); font: 600 16px/1 var(--font-body);
+}
+button.ghost {
+  min-height: 44px; padding: 0 16px; border-radius: var(--radius); cursor: pointer;
+  background: transparent; color: var(--accent); border: 1px solid var(--line); font: 600 14px/1 var(--font-body);
+}
+button.danger { color: var(--crit); }
+.err { background: var(--crit-bg); color: var(--crit); border-radius: 8px; padding: 12px; font-size: 14px; font-weight: 500; }
+.baseline { font-size: 13px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.linkbtn { background: none; border: 0; color: var(--accent); font: 600 13px/1 var(--font-body); cursor: pointer; min-height: 44px; padding: 0 4px; }
+
+/* Informe */
+.nivel {
+  --lc: var(--ok); --lb: var(--ok-bg);
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  border: 1.5px solid var(--lc); background: var(--lb); color: var(--lc); border-radius: var(--radius); padding: 14px 16px;
+}
+.nivel.lvl-MEDIO { --lc: var(--warn); --lb: var(--warn-bg); }
+.nivel.lvl-ALTO { --lc: var(--crit); --lb: var(--crit-bg); }
+.nivel.lvl-INCOMPLETO { --lc: var(--neutral); --lb: var(--neutral-bg); }
+.nivel span { font: 600 12px/1 var(--font-body); letter-spacing: .08em; text-transform: uppercase; }
+.nivel strong { font: 700 30px/1 var(--font-display); }
+.simtag { font: 600 12px/1.3 var(--font-body); color: var(--warn); background: var(--warn-bg); padding: 8px 12px; border-radius: 8px; }
+dl.ficha { display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; margin: 0; font-size: 15px; }
+dl.ficha dt { color: var(--muted); }
+dl.ficha dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.mono { font-family: var(--font-mono); }
+ul.motivos { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.cobertura { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+.fuentes { display: grid; gap: 8px; }
+details.fuente { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+details.fuente summary {
+  list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 12px 14px; min-height: 48px;
+}
+details.fuente summary::-webkit-details-marker { display: none; }
+.fn { font-weight: 500; font-size: 14px; min-width: 0; }
+.pill {
+  --pc: var(--neutral); --pb: var(--neutral-bg);
+  flex: none; font: 600 12px/1 var(--font-body); padding: 6px 9px; border-radius: 999px; color: var(--pc); background: var(--pb); white-space: nowrap;
+}
+.pill.ok { --pc: var(--ok); --pb: var(--ok-bg); }
+.pill.warn { --pc: var(--warn); --pb: var(--warn-bg); }
+.pill.crit { --pc: var(--crit); --pb: var(--crit-bg); }
+.pill.info { --pc: var(--accent); --pb: var(--accent-soft); }
+.fbody { padding: 0 14px 14px; display: grid; gap: 8px; font-size: 14px; }
+.fmeta { font-size: 12px; color: var(--muted); }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 7px 9px; border: 1px solid var(--line); vertical-align: top; }
+th { background: var(--bg); font-weight: 600; white-space: nowrap; }
+.aviso { font-size: 13px; color: var(--muted); }
+.acciones { display: flex; gap: 10px; flex-wrap: wrap; }
+.acciones > * { flex: 1 1 160px; }
+textarea.copia { width: 100%; min-height: 120px; font: 13px/1.4 var(--font-mono); background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+
+/* Listas */
+.list { display: grid; gap: 10px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); width: 100%; text-align: left; font: inherit; color: inherit; }
+button.row { cursor: pointer; }
+.row .main { min-width: 0; display: grid; gap: 2px; }
+.row .main b { font-weight: 600; overflow-wrap: anywhere; }
+.row .sub { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.empty { display: grid; gap: 12px; }
+.log { display: grid; gap: 0; margin: 0; padding: 0; }
+.log li { list-style: none; display: grid; grid-template-columns: 96px 1fr; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.log time { font: 500 12px/1.5 var(--font-mono); color: var(--muted); }
+.log .d { grid-column: 2; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+
+/* Barra inferior */
+nav.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 9; background: var(--surface); border-top: 1px solid var(--line);
+  padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+}
+nav.tabs .wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+nav.tabs button {
+  background: transparent; border: 0; border-radius: 8px; min-height: 56px; cursor: pointer; color: var(--muted);
+  display: grid; justify-items: center; align-content: center; gap: 3px; font: 500 12px/1 var(--font-body);
+}
+nav.tabs button svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+nav.tabs button[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+
+#toast {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-size: 14px; z-index: 20; max-width: 90vw;
+}
+details.ayuda summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+details.ayuda ol { margin: 4px 0 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) { button, .chip { transition: background-color .15s, opacity .15s; } }
+</style>
+
+<style>
+/* Marca PPS Logistic: azul marino, naranja y plomo */
+:root {
+  --navy: #1c2b4a; --orange: #e8761e; --lead: #6b7580;
+  --bg: #f1f3f5; --surface: #ffffff; --ink: #122033; --muted: #5d6874; --line: #d5dae0;
+  --accent: #243a63; --accent-ink: #ffffff; --accent-soft: #e5ecf4;
+  --neutral: #4f5964; --neutral-bg: #e8ebee;
+  --header-bg: #1c2b4a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1522; --surface: #132033; --ink: #e7edf3; --muted: #a2adb9; --line: #27374b;
+    --accent: #ff9a5c; --accent-ink: #1b1006; --accent-soft: #2b2017;
+    --neutral: #aab4bf; --neutral-bg: #1f2b3a; --header-bg: #0f1a30; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1522; --surface: #132033; --ink: #e7edf3; --muted: #a2adb9; --line: #27374b;
+  --accent: #ff9a5c; --accent-ink: #1b1006; --accent-soft: #2b2017;
+  --neutral: #aab4bf; --neutral-bg: #1f2b3a; --header-bg: #0f1a30; color-scheme: dark;
+}
+body::before { background: var(--header-bg); }
+header.top { background: var(--header-bg); border-bottom: 3px solid var(--orange); }
+.brand { color: #fff; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.brand small { color: #b9c4d0; margin-top: 0; }
+.wm { font: 700 22px/1 var(--font-display); letter-spacing: .03em; color: #fff; }
+.wm i { font-style: normal; color: var(--orange); }
+#logo { height: 54px; width: auto; max-width: 60vw; background: #fff; padding: 4px 8px; border-radius: 6px; }
+h2::after { content: ""; display: block; width: 36px; height: 3px; background: var(--orange); margin-top: 8px; border-radius: 2px; }
+nav.tabs button[aria-current="page"] { box-shadow: inset 0 3px 0 var(--orange); }
+.repHead {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px 12px; flex-wrap: wrap;
+  background: var(--header-bg); color: #cbd5df; border-bottom: 3px solid var(--orange);
+  border-radius: var(--radius); padding: 12px 14px; font-size: 13px;
+}
+.repHead .wm { font-size: 18px; }
+.repHead .logoimg { height: 40px; width: auto; max-width: 55%; background: #fff; padding: 3px 8px; border-radius: 5px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><span class="wm" id="wm">PPS <i>LOGISTIC</i></span><img id="logo" src="icons/logo.png" alt="PPS Logistic" hidden><small>Verificador · uso interno</small></div>
+    <span class="modo">Modo simulado</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- CONSULTA -->
+  <section id="v-consulta" class="stack">
+    <div id="formArea" class="stack">
+      <h2>Consulta rápida</h2>
+
+      <div id="setupCard" class="card empty" hidden>
+        <p><b>Antes de la primera consulta</b></p>
+        <p class="lead">Declara una sola vez la base legal que respalda las consultas de tu empresa. Queda anotada en cada informe y en el registro.</p>
+        <button class="primary" type="button" data-act="tab" data-tab="ajustes">Ir a Ajustes</button>
+      </div>
+
+      <form id="form" class="card stack" novalidate autocomplete="off" hidden>
+        <div class="field">
+          <label for="cedula">Número de cédula</label>
+          <input id="cedula" class="mono" type="text" inputmode="numeric" maxlength="10" placeholder="0000000000">
+          <p class="hint">Mientras no haya fuentes reales, solo funcionan cédulas de prueba (empiezan con 99).</p>
+        </div>
+        <div>
+          <p class="lbl" style="margin-bottom:8px">Cédulas de prueba</p>
+          <div class="chips" id="chips"></div>
+        </div>
+        <div class="field">
+          <label for="finalidad">Finalidad de la consulta</label>
+          <select id="finalidad"></select>
+        </div>
+        <p id="err" class="err" role="alert" hidden></p>
+        <button class="primary" id="go" type="submit">Consultar</button>
+        <div class="baseline"><span id="baseLine"></span><button class="linkbtn" type="button" data-act="tab" data-tab="ajustes">Cambiar</button></div>
+      </form>
+    </div>
+    <div id="resultArea" class="stack" hidden></div>
+  </section>
+
+  <!-- INFORMES -->
+  <section id="v-informes" class="stack" hidden>
+    <div id="listaArea" class="stack">
+      <h2>Informes</h2>
+      <div id="informesList"></div>
+    </div>
+    <div id="detalleArea" class="stack" hidden></div>
+  </section>
+
+  <!-- REGISTRO -->
+  <section id="v-registro" class="stack" hidden>
+    <h2>Registro de actividad</h2>
+    <p class="lead">Cada consulta e informe queda anotado con fecha, usuario y base legal. Los datos viven solo en este dispositivo.</p>
+    <div id="logList" class="card"></div>
+  </section>
+
+  <!-- AJUSTES -->
+  <section id="v-ajustes" class="stack" hidden>
+    <h2>Ajustes</h2>
+    <form id="formConfig" class="card stack" novalidate autocomplete="off">
+      <h3>Base legal de la empresa</h3>
+      <p class="lead">La ley de protección de datos exige una base legítima para tratar antecedentes de personas. Decláralo una vez y las consultas serán solo con la cédula.</p>
+      <div class="grid2">
+        <div class="field"><label for="cfUsuario">Tu nombre</label><input id="cfUsuario" type="text" placeholder="Quien declara y consulta"></div>
+        <div class="field"><label for="cfEmpresa">Empresa</label><input id="cfEmpresa" type="text" placeholder="Nombre de la empresa"></div>
+      </div>
+      <div class="field">
+        <label for="cfBase">Base que respalda las consultas</label>
+        <select id="cfBase"></select>
+      </div>
+      <div class="field">
+        <label for="cfRef">Referencia del documento</label>
+        <input id="cfRef" type="text" placeholder="Ej.: Política de privacidad v2, aceptada al ingresar">
+      </div>
+      <label class="check"><input type="checkbox" id="cfSujeto"><span>Mi empresa es sujeto obligado registrado ante la UAFE (habilita esa fuente).</span></label>
+      <label class="check"><input type="checkbox" id="cfConfirma"><span>Declaro que la empresa cuenta con esa base legal para cada persona que se consulte, que usará los resultados solo para la finalidad elegida y que no se usarán para discriminar.</span></label>
+      <p id="cfErr" class="err" role="alert" hidden></p>
+      <button class="primary" type="submit">Guardar declaración</button>
+      <p class="hint" id="cfEstado"></p>
+    </form>
+
+    <div class="card stack">
+      <h3>Datos de este dispositivo</h3>
+      <p class="aviso">Retención: elimina los informes de más de 90 días. El registro de actividad se conserva.</p>
+      <div class="acciones">
+        <button class="ghost" data-act="purgar" type="button">Eliminar informes antiguos</button>
+        <button class="ghost danger" data-act="borrar" type="button">Borrar todo</button>
+      </div>
+    </div>
+    <details class="card ayuda">
+      <summary>Usar como app en el celular o la tablet</summary>
+      <ol>
+        <li>Abre este archivo o enlace en Safari (iPhone, iPad) o Chrome (Android).</li>
+        <li>iPhone o iPad: toca Compartir y luego "Añadir a pantalla de inicio".</li>
+        <li>Android: abre el menú de Chrome y elige "Añadir a pantalla de inicio" o "Instalar app".</li>
+      </ol>
+    </details>
+  </section>
+</main>
+
+<nav class="tabs" aria-label="Secciones">
+  <div class="wrap">
+    <button data-act="tab" data-tab="consulta" aria-current="page" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Consulta
+    </button>
+    <button data-act="tab" data-tab="informes" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>Informes
+    </button>
+    <button data-act="tab" data-tab="registro" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 6h14M5 12h14M5 18h9"/></svg>Registro
+    </button>
+    <button data-act="tab" data-tab="ajustes" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>Ajustes
+    </button>
+  </div>
+</nav>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Cédula ---------- */
+  var COEF = [2, 1, 2, 1, 2, 1, 2, 1, 2];
+  function digito(p9) {
+    var t = 0;
+    for (var i = 0; i < 9; i++) { var x = Number(p9[i]) * COEF[i]; if (x > 9) x -= 9; t += x; }
+    return (10 - (t % 10)) % 10;
+  }
+  function conDigito(p9) { return p9 + digito(p9); }
+  function validarCedula(raw) {
+    var c = String(raw || "").replace(/\D/g, "");
+    if (c.length !== 10) throw new Error("La cédula debe tener 10 dígitos.");
+    if (c.indexOf("99") !== 0) throw new Error("Modo simulado: solo se aceptan cédulas de prueba (prefijo 99). Un resultado simulado no dice nada sobre una persona real.");
+    if (digito(c.slice(0, 9)) !== Number(c[9])) throw new Error("Dígito verificador incorrecto.");
+    return c;
+  }
+
+  /* ---------- Datos ficticios ---------- */
+  var DEMOS = {
+    limpio: { etiqueta: "Sin hallazgos", cedula: conDigito("990000001"), nombre: "PERSONA DEMO LIMPIA" },
+    proceso_civil: { etiqueta: "Proceso civil", cedula: conDigito("990000002"), nombre: "PERSONA DEMO PROCESO CIVIL" },
+    homonimo: { etiqueta: "Homónimo", cedula: conDigito("990000003"), nombre: "PERSONA DEMO HOMONIMA" },
+    sentencia: { etiqueta: "Sentencia", cedula: conDigito("990000004"), nombre: "PERSONA DEMO SENTENCIA" },
+    pension: { etiqueta: "Pensión pendiente", cedula: conDigito("990000005"), nombre: "PERSONA DEMO PENSION" }
+  };
+  function demoDe(c) {
+    for (var k in DEMOS) if (DEMOS[k].cedula === c) return { esc: k, nombre: DEMOS[k].nombre };
+    return { esc: "limpio", nombre: "PERSONA DE PRUEBA" };
+  }
+  var HALLAZGOS = {
+    proceso_civil: { judicatura_demandado_cedula: ["PROCESO_EN_CURSO",
+      [{ proceso: "09999-2026-00001", materia: "Civil", "acción": "Cobro de dinero", ciudad: "Guayaquil", fecha: "2026-03-10", "situación": "En trámite" }],
+      "Proceso civil en trámite: no implica responsabilidad ni sentencia."] },
+    homonimo: { judicatura_demandado_nombres: ["COINCIDENCIA_POR_NOMBRE",
+      [{ proceso: "09999-2024-00077", materia: "Penal", "acción": "Delito de ejemplo", ciudad: "Quito", fecha: "2024-06-01", "situación": "Sin verificar identidad" }],
+      "Coincide solo el nombre; la búsqueda por cédula no arroja registros. Probable homónimo."] },
+    sentencia: { judicatura_info_individual: ["SENTENCIA",
+      [{ proceso: "09999-2021-00123", materia: "Penal", "acción": "Delito de ejemplo", provincia: "Guayas", fecha: "2022-11-20", "situación": "Sentencia ejecutoriada" }],
+      "Sentencia registrada por cédula (dato ficticio)."] },
+    pension: { supa: ["OBLIGACION_PENDIENTE",
+      [{ pensiones_pendientes: "3", total_pendiente_usd: "450.00" }],
+      "Obligación de pensión alimenticia pendiente (dato ficticio)."] }
+  };
+  function hallazgo(esc, id) {
+    var h = (HALLAZGOS[esc] || {})[id];
+    if (h) return h;
+    if (id === "registro_civil") return ["INFORMACION_ENCONTRADA",
+      [{ identidad: "Cédula vigente", nacionalidad: "ECUATORIANA", "condición": "CIUDADANO" }], "Identidad confirmada."];
+    return ["SIN_REGISTROS", [], ""];
+  }
+
+  var FUENTES = [
+    ["registro_civil", "Registro Civil: Validación de identidad", "Registro Civil", "cédula", false],
+    ["antecedentes_mi", "Ministerio del Interior: Antecedentes penales", "Ministerio del Interior", "cédula", false],
+    ["fiscalia_cedula", "Fiscalía: Noticias del delito (por cédula)", "Fiscalía General del Estado", "cédula", false],
+    ["fiscalia_nombres", "Fiscalía: Noticias del delito (por nombres)", "Fiscalía General del Estado", "nombre", false],
+    ["judicatura_demandado_cedula", "Judicatura: Procesos como demandado (por cédula)", "Consejo de la Judicatura", "cédula", false],
+    ["judicatura_demandado_nombres", "Judicatura: Procesos como demandado (por nombres)", "Consejo de la Judicatura", "nombre", false],
+    ["judicatura_ofendido_cedula", "Judicatura: Procesos como actor u ofendido", "Consejo de la Judicatura", "cédula", false],
+    ["judicatura_insolvencias", "Judicatura: Insolvencias y quiebras", "Consejo de la Judicatura", "cédula", false],
+    ["judicatura_info_individual", "Judicatura: Información judicial individual", "Consejo de la Judicatura", "cédula", false],
+    ["supa", "SUPA: Pensiones alimenticias pendientes", "Consejo de la Judicatura", "cédula", false],
+    ["listas_internacionales", "Listas internacionales sancionadas", "Listas de sanciones", "nombre", false],
+    ["uafe_coincidencias", "UAFE: Sistema de coincidencias", "UAFE", "cédula", true]
+  ];
+
+  var FINALIDADES = {
+    seleccion_personal: "Selección y contratación de personal",
+    verificacion_empleado: "Verificación de personal vigente",
+    arriendo: "Evaluación para arrendamiento",
+    debida_diligencia_cliente: "Debida diligencia de clientes o proveedores",
+    relacion_comercial: "Relación comercial o societaria"
+  };
+  var BASES = {
+    aviso_privacidad: "Aviso de privacidad aceptado al ingresar o postular",
+    autorizacion_archivada: "Autorización firmada, archivada por la empresa",
+    obligacion_legal: "Obligación legal aplicable"
+  };
+  var ETIQUETAS = {
+    SIN_REGISTROS: ["Sin registros", "ok"], INFORMACION_ENCONTRADA: ["Información encontrada", "info"],
+    PROCESO_EN_CURSO: ["Proceso en curso", "warn"], SENTENCIA: ["Sentencia registrada", "crit"],
+    OBLIGACION_PENDIENTE: ["Obligación pendiente", "warn"], COINCIDENCIA_POR_NOMBRE: ["Coincidencia por nombre", "warn"],
+    NO_CONSULTADA: ["No consultada", ""], ERROR: ["Error de consulta", ""]
+  };
+  var ACCIONES = {
+    BASE_LEGAL_DECLARADA: "Base legal declarada", VERIFICACION_INICIADA: "Consulta iniciada",
+    FUENTES_CONSULTADAS: "Fuentes consultadas", INFORME_GENERADO: "Informe generado",
+    PURGA_RETENCION: "Limpieza por retención", DATOS_BORRADOS: "Datos borrados"
+  };
+  var AVISO = "Este informe es orientativo y se genera para la finalidad indicada, con la base legal declarada por la empresa. No determina culpabilidad ni idoneidad. Un proceso en curso no es una condena (presunción de inocencia) y las coincidencias por nombre pueden ser homónimos. Está prohibido usar esta información con fines discriminatorios. Ninguna decisión adversa debe tomarse de forma automática: requiere revisión humana, y la persona evaluada puede pedir acceso, rectificación u oposición.";
+
+  /* ---------- Reglas (mismas que el prototipo Python) ---------- */
+  var ORDEN = { BAJO: 0, INCOMPLETO: 1, MEDIO: 2, ALTO: 3 };
+  function evaluar(res) {
+    var nivel = "BAJO", motivos = [];
+    function subir(n) { if (ORDEN[n] > ORDEN[nivel]) nivel = n; }
+    res.forEach(function (r) {
+      if (r.estado === "SENTENCIA" && r.por === "cédula") { subir("ALTO"); motivos.push(r.fuente + ": sentencia registrada por cédula. Requiere revisión humana."); }
+      else if (r.estado === "PROCESO_EN_CURSO") { subir("MEDIO"); motivos.push(r.fuente + ": proceso en curso (no implica responsabilidad)."); }
+      else if (r.estado === "OBLIGACION_PENDIENTE") { subir("MEDIO"); motivos.push(r.fuente + ": obligación pendiente."); }
+      else if (r.estado === "COINCIDENCIA_POR_NOMBRE") { subir("MEDIO"); motivos.push(r.fuente + ": coincidencia solo por nombre; verificar posible homónimo."); }
+      else if (r.estado === "ERROR") { subir("INCOMPLETO"); motivos.push(r.fuente + ": no se pudo consultar."); }
+    });
+    var no = res.filter(function (r) { return r.estado === "NO_CONSULTADA" || r.estado === "ERROR"; });
+    var consultadas = res.length - no.length;
+    if (nivel === "BAJO") motivos.push("No se identificaron hallazgos en las fuentes efectivamente consultadas.");
+    if (no.length) motivos.push("Cobertura parcial: " + consultadas + " de " + res.length + " fuentes consultadas.");
+    return { nivel: nivel, motivos: motivos, consultadas: consultadas, total: res.length };
+  }
+
+  /* ---------- Almacenamiento (solo este dispositivo) ---------- */
+  var KEY = "verificador-interno-v1";
+  var store = { audit: [], reports: [], config: { base: "", referencia: "", empresa: "", usuario: "", sujeto: false, declarado: "" } };
+  function cargar() {
+    try { var raw = localStorage.getItem(KEY); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch (e) {}
+  }
+  function guardar() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) {} }
+  function configurada() { var c = store.config; return !!(c.base && c.empresa && c.usuario && c.referencia && c.declarado); }
+  function log(accion, detalle) {
+    store.audit.unshift({ ts: new Date().toISOString(), usuario: store.config.usuario || "sin declarar", accion: accion, detalle: detalle || "" });
+    if (store.audit.length > 500) store.audit.length = 500;
+  }
+
+  /* ---------- Utilidades ---------- */
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function fecha(iso) { try { return new Date(iso).toLocaleString("es-EC", { dateStyle: "short", timeStyle: "short" }); } catch (e) { return iso; } }
+  function enmascarar(c) { return "******" + c.slice(-4); }
+  var toastT;
+  function aviso(txt) {
+    var t = $("toast"); t.textContent = txt; t.hidden = false; clearTimeout(toastT);
+    toastT = setTimeout(function () { t.hidden = true; }, 2600);
+  }
+
+  /* ---------- Consulta ---------- */
+  function ejecutar(cedulaRaw, finalidad) {
+    if (!configurada()) throw new Error("Primero guarda la declaración de base legal en Ajustes.");
+    var cedula = validarCedula(cedulaRaw);
+    var cfg = store.config, persona = demoDe(cedula);
+    log("VERIFICACION_INICIADA", "finalidad=" + finalidad + "; base=" + cfg.base + "; simulado=true");
+    var resultados = FUENTES.map(function (f) {
+      var r = { id: f[0], fuente: f[1], institucion: f[2], por: f[3], registros: [], nota: "", estado: "" };
+      if (f[4] && !cfg.sujeto) {
+        r.estado = "NO_CONSULTADA"; r.nota = "Fuente de uso restringido: requiere ser sujeto obligado registrado.";
+      } else {
+        var h = hallazgo(persona.esc, f[0]); r.estado = h[0]; r.registros = h[1]; r.nota = h[2];
+      }
+      return r;
+    });
+    var resumen = evaluar(resultados);
+    log("FUENTES_CONSULTADAS", resumen.consultadas + " de " + resumen.total + " fuentes");
+    var informe = { id: "I" + Date.now() + Math.floor(Math.random() * 1000), cedulaMasc: enmascarar(cedula), nombre: persona.nombre,
+      finalidad: finalidad, usuario: cfg.usuario, empresa: cfg.empresa, base: cfg.base, referencia: cfg.referencia,
+      generado: new Date().toISOString(), resultados: resultados, resumen: resumen };
+    store.reports.unshift(informe);
+    log("INFORME_GENERADO", "nivel=" + resumen.nivel + "; cédula=" + informe.cedulaMasc);
+    guardar();
+    return informe;
+  }
+
+  /* ---------- Vistas ---------- */
+  var state = { tab: "consulta" };
+  var logoOk = false;
+  (function () {
+    var im = new Image();
+    im.onload = function () { logoOk = true; $("logo").hidden = false; $("wm").hidden = true; };
+    im.src = "icons/logo.png";
+  })();
+  function marcaHTML() {
+    return logoOk ? '<img class="logoimg" src="icons/logo.png" alt="PPS Logistic">' : '<span class="wm">PPS <i>LOGISTIC</i></span>';
+  }
+  function fuenteHTML(r) {
+    var e = ETIQUETAS[r.estado] || [r.estado, ""];
+    var cuerpo = "";
+    if (r.registros.length) {
+      var cols = Object.keys(r.registros[0]);
+      cuerpo = '<div class="tablewrap"><table><thead><tr>' + cols.map(function (k) {
+        var t = k.replace(/_/g, " "); return "<th>" + esc(t.charAt(0).toUpperCase() + t.slice(1)) + "</th>";
+      }).join("") + "</tr></thead><tbody>" + r.registros.map(function (g) {
+        return "<tr>" + cols.map(function (k) { return "<td>" + esc(g[k]) + "</td>"; }).join("") + "</tr>";
+      }).join("") + "</tbody></table></div>";
+    } else if (r.estado === "SIN_REGISTROS") cuerpo = "<p>Sin registros.</p>";
+    return '<details class="fuente"><summary><span class="fn">' + esc(r.fuente) + '</span><span class="pill ' + e[1] + '">' + esc(e[0]) +
+      '</span></summary><div class="fbody"><p class="fmeta">' + esc(r.institucion) + " · búsqueda por " + esc(r.por) + "</p>" + cuerpo +
+      (r.nota ? '<p class="fmeta">Nota: ' + esc(r.nota) + "</p>" : "") + "</div></details>";
+  }
+  function informeHTML(inf) {
+    var r = inf.resumen, enInformes = state.tab === "informes";
+    return '<article class="stack">' +
+      '<div class="repHead">' + marcaHTML() + '<span>Informe de verificación</span></div>' +
+      '<div class="nivel lvl-' + esc(r.nivel) + '"><span>Nivel orientativo</span><strong>' + esc(r.nivel) + "</strong></div>" +
+      '<p class="simtag">DATOS SIMULADOS · este informe no describe a ninguna persona real</p>' +
+      '<div class="card"><dl class="ficha"><dt>Cédula</dt><dd class="mono">' + esc(inf.cedulaMasc) + '</dd><dt>Nombre</dt><dd>' + esc(inf.nombre) +
+      "</dd><dt>Finalidad</dt><dd>" + esc(FINALIDADES[inf.finalidad] || inf.finalidad) + "</dd><dt>Consulta</dt><dd>" + esc(fecha(inf.generado)) +
+      "</dd><dt>Usuario</dt><dd>" + esc(inf.usuario) + " · " + esc(inf.empresa) + "</dd><dt>Base legal</dt><dd>" + esc(BASES[inf.base] || inf.base) +
+      " (" + esc(inf.referencia) + ")</dd></dl></div>" +
+      '<div><h3>Resumen</h3><ul class="motivos">' + r.motivos.map(function (m) { return "<li>" + esc(m) + "</li>"; }).join("") +
+      '</ul><p class="cobertura">Cobertura: ' + r.consultadas + " de " + r.total + " fuentes consultadas.</p></div>" +
+      '<div><h3>Fuentes consultadas</h3><div class="fuentes">' + inf.resultados.map(fuenteHTML).join("") + "</div></div>" +
+      '<div><h3>Importante</h3><p class="aviso">' + esc(AVISO) + "</p></div>" +
+      '<div id="copiaArea"></div>' +
+      '<div class="acciones"><button class="ghost" type="button" data-act="copiar" data-id="' + esc(inf.id) + '">Copiar resumen</button>' +
+      '<button class="ghost" type="button" data-act="volver" data-donde="' + (enInformes ? "informes" : "consulta") + '">' +
+      (enInformes ? "Volver a informes" : "Nueva consulta") + "</button></div></article>";
+  }
+  function resumenTexto(inf) {
+    var l = ["PPS LOGISTIC · INFORME DE VERIFICACIÓN (DATOS SIMULADOS)", "Persona: " + inf.nombre + " (" + inf.cedulaMasc + ")",
+      "Finalidad: " + (FINALIDADES[inf.finalidad] || inf.finalidad), "Base legal: " + (BASES[inf.base] || inf.base),
+      "Fecha: " + fecha(inf.generado), "Nivel orientativo: " + inf.resumen.nivel, ""];
+    inf.resumen.motivos.forEach(function (m) { l.push("- " + m); });
+    l.push("", "Cobertura: " + inf.resumen.consultadas + " de " + inf.resumen.total + " fuentes.", "", "Informe orientativo. No determina culpabilidad; requiere revisión humana.");
+    return l.join("\n");
+  }
+
+  function pintarConsulta() {
+    var ok = configurada();
+    $("setupCard").hidden = ok; $("form").hidden = !ok;
+    if (ok) $("baseLine").textContent = "Base legal: " + (BASES[store.config.base] || "") + " · " + store.config.empresa;
+  }
+  function pintarInformes() {
+    var l = $("informesList");
+    if (!store.reports.length) {
+      l.innerHTML = '<div class="card empty"><p><b>Todavía no hay informes.</b></p><p class="lead">Haz una consulta con una cédula de prueba o carga cinco ejemplos para ver cómo se ve cada nivel.</p>' +
+        '<button class="ghost" type="button" data-act="demos">Cargar 5 ejemplos</button></div>';
+      return;
+    }
+    l.innerHTML = '<div class="list">' + store.reports.map(function (r) {
+      return '<button class="row" type="button" data-act="abrir" data-id="' + esc(r.id) + '"><span class="main"><b>' + esc(r.nombre) +
+        '</b><span class="sub">' + esc(fecha(r.generado)) + " · " + esc(FINALIDADES[r.finalidad] || "") + '</span></span><span class="pill ' +
+        ({ BAJO: "ok", MEDIO: "warn", ALTO: "crit" }[r.resumen.nivel] || "") + '">' + esc(r.resumen.nivel) + "</span></button>";
+    }).join("") + "</div>";
+  }
+  function pintarRegistro() {
+    var l = $("logList");
+    if (!store.audit.length) { l.innerHTML = '<p class="aviso">Sin actividad todavía.</p>'; return; }
+    l.innerHTML = '<ul class="log">' + store.audit.slice(0, 100).map(function (a) {
+      return "<li><time>" + esc(fecha(a.ts)) + "</time><span><b>" + esc(ACCIONES[a.accion] || a.accion) + "</b> · " + esc(a.usuario) + "</span>" +
+        (a.detalle ? '<span class="d">' + esc(a.detalle) + "</span>" : "") + "</li>";
+    }).join("") + "</ul>";
+  }
+  function pintarAjustes() {
+    var c = store.config;
+    $("cfUsuario").value = c.usuario; $("cfEmpresa").value = c.empresa; $("cfBase").value = c.base || "aviso_privacidad";
+    $("cfRef").value = c.referencia; $("cfSujeto").checked = !!c.sujeto; $("cfConfirma").checked = false;
+    $("cfEstado").textContent = configurada() ? "Declaración vigente desde " + fecha(c.declarado) + "." : "Todavía no hay declaración guardada.";
+  }
+
+  var TABS = ["consulta", "informes", "registro", "ajustes"];
+  function irA(tab) {
+    state.tab = tab;
+    TABS.forEach(function (t) { $("v-" + t).hidden = t !== tab; });
+    document.querySelectorAll("nav.tabs button").forEach(function (b) {
+      if (b.dataset.tab === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+    });
+    if (tab === "informes") { $("listaArea").hidden = false; $("detalleArea").hidden = true; pintarInformes(); }
+    if (tab === "registro") pintarRegistro();
+    if (tab === "ajustes") pintarAjustes();
+    if (tab === "consulta") pintarConsulta();
+    window.scrollTo(0, 0);
+  }
+  function mostrarResultado(inf) {
+    $("formArea").hidden = true; $("resultArea").hidden = false; $("resultArea").innerHTML = informeHTML(inf);
+    window.scrollTo(0, 0);
+  }
+  function buscar(id) { return store.reports.filter(function (r) { return r.id === id; })[0]; }
+
+  /* ---------- Eventos ---------- */
+  var confirmando = {};
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-act]"); if (!b) return;
+    var act = b.dataset.act;
+    if (act === "tab") irA(b.dataset.tab);
+    else if (act === "demo") { $("cedula").value = DEMOS[b.dataset.esc].cedula; $("cedula").focus(); }
+    else if (act === "volver") {
+      if (b.dataset.donde === "informes") { $("detalleArea").hidden = true; $("listaArea").hidden = false; pintarInformes(); }
+      else { $("resultArea").hidden = true; $("formArea").hidden = false; $("cedula").value = ""; pintarConsulta(); }
+      window.scrollTo(0, 0);
+    } else if (act === "abrir") {
+      var inf = buscar(b.dataset.id); if (!inf) return;
+      $("listaArea").hidden = true; $("detalleArea").hidden = false; $("detalleArea").innerHTML = informeHTML(inf); window.scrollTo(0, 0);
+    } else if (act === "copiar") {
+      var i2 = buscar(b.dataset.id); if (!i2) return;
+      var txt = resumenTexto(i2);
+      var mostrar = function () {
+        var area = b.closest("article").querySelector("#copiaArea");
+        area.innerHTML = '<textarea class="copia" readonly aria-label="Resumen para copiar">' + esc(txt) + "</textarea>";
+        var ta = area.firstChild; ta.focus(); ta.select(); aviso("Selecciona y copia el texto");
+      };
+      try { navigator.clipboard.writeText(txt).then(function () { aviso("Resumen copiado"); }, mostrar); } catch (err) { mostrar(); }
+    } else if (act === "demos") {
+      if (!configurada()) { aviso("Primero guarda la declaración en Ajustes"); irA("ajustes"); return; }
+      Object.keys(DEMOS).forEach(function (k) { ejecutar(DEMOS[k].cedula, "seleccion_personal"); });
+      aviso("Ejemplos cargados"); pintarInformes();
+    } else if (act === "purgar") {
+      var limite = Date.now() - 90 * 86400000, antes = store.reports.length;
+      store.reports = store.reports.filter(function (r) { return new Date(r.generado).getTime() >= limite; });
+      log("PURGA_RETENCION", "eliminados=" + (antes - store.reports.length));
+      guardar(); aviso("Eliminados: " + (antes - store.reports.length));
+    } else if (act === "borrar") {
+      if (!confirmando.borrar) { confirmando.borrar = true; b.textContent = "Toca otra vez para borrar"; setTimeout(function () { confirmando.borrar = false; if (b.isConnected) b.textContent = "Borrar todo"; }, 4000); return; }
+      confirmando.borrar = false;
+      var quien = store.config.usuario || "sin declarar";
+      store = { audit: [], reports: [], config: { base: "", referencia: "", empresa: "", usuario: "", sujeto: false, declarado: "" } };
+      store.audit.unshift({ ts: new Date().toISOString(), usuario: quien, accion: "DATOS_BORRADOS", detalle: "" });
+      guardar(); pintarAjustes(); b.textContent = "Borrar todo"; aviso("Datos borrados");
+    }
+  });
+
+  $("cedula").addEventListener("input", function () { this.value = this.value.replace(/\D/g, "").slice(0, 10); });
+
+  $("form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var err = $("err"); err.hidden = true;
+    try { mostrarResultado(ejecutar($("cedula").value, $("finalidad").value)); }
+    catch (e) { err.textContent = e.message; err.hidden = false; }
+  });
+
+  $("formConfig").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var err = $("cfErr"); err.hidden = true;
+    var d = { usuario: $("cfUsuario").value.trim(), empresa: $("cfEmpresa").value.trim(), base: $("cfBase").value,
+      referencia: $("cfRef").value.trim(), sujeto: $("cfSujeto").checked };
+    var falta = !d.usuario ? "Escribe tu nombre." : !d.empresa ? "Escribe el nombre de la empresa." :
+      !d.referencia ? "Indica la referencia del documento que respalda la base legal." :
+      !$("cfConfirma").checked ? "Marca la declaración para poder guardar." : "";
+    if (falta) { err.textContent = falta; err.hidden = false; return; }
+    store.config = { base: d.base, referencia: d.referencia, empresa: d.empresa, usuario: d.usuario, sujeto: d.sujeto, declarado: new Date().toISOString() };
+    log("BASE_LEGAL_DECLARADA", "base=" + d.base + "; referencia=" + d.referencia + "; uafe=" + d.sujeto);
+    guardar(); pintarAjustes(); aviso("Declaración guardada"); irA("consulta");
+  });
+
+  /* ---------- Arranque ---------- */
+  cargar();
+  $("finalidad").innerHTML = Object.keys(FINALIDADES).map(function (k) { return '<option value="' + k + '">' + esc(FINALIDADES[k]) + "</option>"; }).join("");
+  $("cfBase").innerHTML = Object.keys(BASES).map(function (k) { return '<option value="' + k + '">' + esc(BASES[k]) + "</option>"; }).join("");
+  $("chips").innerHTML = Object.keys(DEMOS).map(function (k) { return '<button class="chip" type="button" data-act="demo" data-esc="' + k + '">' + esc(DEMOS[k].etiqueta) + "</button>"; }).join("");
+  pintarConsulta();
+})();
+</script>
+<script>
+if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+  window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+}
+</script>
+</body>
+</html>
